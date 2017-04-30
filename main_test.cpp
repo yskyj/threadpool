@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 using namespace std;
 
 void Signal()
@@ -34,7 +35,7 @@ void DumpTraceback(int Signal) {
         char** strings = ::backtrace_symbols(buffer, nptrs);
         if (strings) {
                 for (int i = 0; i < nptrs; ++i) {
-                        printf("line=%d||trace_back=%s||", i, strings[i]);
+                        printf("line=%d||trace_back=%s||\n", i, strings[i]);
                 }
                 printf("\n");
                 free(strings);
@@ -59,16 +60,16 @@ void* count(void *arg) {
         return NULL;
 }
 int main() {
-        Signal();
-        signal(SIGBUS,  DumpTraceback);
-        signal(SIGSEGV, DumpTraceback);
-        signal(SIGABRT, DumpTraceback);
-        signal(SIGILL,  DumpTraceback);
-        signal(SIGFPE,  DumpTraceback);
-        signal(SIGTERM, DumpTraceback);
+       Signal();
+       // signal(SIGBUS,  DumpTraceback);
+       // signal(SIGSEGV, DumpTraceback);
+       // signal(SIGABRT, DumpTraceback);
+       // signal(SIGILL,  DumpTraceback);
+       // signal(SIGFPE,  DumpTraceback);
+       // signal(SIGTERM, DumpTraceback);
 
         vector<params> v;
-        vector<task> vt; 
+        vector<task*> vt; 
         v.clear();
 
 #if 0
@@ -84,24 +85,28 @@ int main() {
         cout<<conq.size()<<endl;
 #endif
 
-        threadPool asynio(2);
+        threadPool asynio(10);
         asynio.Init();
-        for (int i = 0; i < 50; i++) {
+        for (int i = 0; i < 100000; i++) {
                 params p;
                 p.num = i;
                 v.push_back(p);
         }
         for (int i = 0; i < v.size(); i++) {
-                //cout<<i<<endl;
-                task ta;
+                task *ta = new task;
                 vt.push_back(ta); 
-                vt.back().handle = count;
-                vt.back().arg = &v[i];
-                asynio.Push(&(vt.back()));
-                //cout<<"hah:"<<&v[i]<<":"<<&ta<<endl;
-                printf("hha:%p:%p\n", &(vt.back()), &v[i]);
+                ta->handle = count;
+                ta->arg = &v[i];
+                asynio.Push(ta);
         }
+        //task *t = asynio.getTask();
+        //printf("Task:%p\n", t);
 
-        asynio.Stop();
+        printf("beigin wait\n"); 
+        asynio.Wait(); 
+        printf("end wait\n"); 
+        for (int i = 0; i < vt.size(); i++) {
+            delete vt[i];
+        }
         return 0;
 }
